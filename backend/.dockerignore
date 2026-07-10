@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log
+.env
+coverage
+uploads/*.jpg
+uploads/*.png
+uploads/*.jpeg
+uploads/*.gif
+.DS_Store
