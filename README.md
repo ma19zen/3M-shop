@@ -19,9 +19,9 @@ services, testing, and professional project delivery.
 
 You can explore the source code, project structure, and the live application through the following links:
 
-🌐 Live Preview: [Insert your deployed project URL here]
+🌐 Live Preview: i will put the link to my self hosted version when i finish
 
-📂 GitHub Repository: [Insert your repository link here]
+📂 GitHub Repository: [https://github.com/ma19zen/3M-shop]
 
 💡 Quick Guide for Evaluators
 Deployment: The project is fully containerized with Docker. You can run it locally using docker-compose up --build.
