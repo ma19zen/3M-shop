@@ -1,44 +1,29 @@
-let app = null;
-let isConnected = false;
-let connectionError = null;
-
-async function init() {
-  if (app) return;
-  const server = require('../src/server');
-  app = server.app;
-
-  try {
-    const { connectMongo, connectPostgres } = require('../src/config/db');
-    const { initOrderTable } = require('../src/models/Order');
-    await connectMongo();
-    await connectPostgres();
-    await initOrderTable();
-    isConnected = true;
-  } catch (error) {
-    console.error('DB connection failed:', error.message);
-    connectionError = error.message;
-  }
-}
+console.log('Function loaded');
 
 module.exports = async (req, res) => {
+  console.log('Request:', req.method, req.url);
   try {
-    await init();
+    console.log('Loading server...');
+    const server = require('../src/server');
+    console.log('Server loaded, app:', typeof server.app);
+
+    const { connectMongo, connectPostgres } = require('../src/config/db');
+    const { initOrderTable } = require('../src/models/Order');
+
+    console.log('Connecting MongoDB...');
+    await connectMongo();
+    console.log('Connecting Postgres...');
+    await connectPostgres();
+    console.log('Init order table...');
+    await initOrderTable();
+    console.log('DB ready');
+
+    return server.app(req, res);
   } catch (error) {
-    console.error('Init failed:', error.message);
+    console.error('HANDLER ERROR:', error.message, error.stack);
     return res.status(500).json({
       success: false,
-      message: 'Server initialization failed',
-      error: error.message,
+      message: error.message,
     });
   }
-
-  if (connectionError) {
-    return res.status(500).json({
-      success: false,
-      message: 'Database connection failed',
-      error: connectionError,
-    });
-  }
-
-  return app(req, res);
 };
