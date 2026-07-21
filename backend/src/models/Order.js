@@ -1,8 +1,8 @@
-const { pgPool } = require('../config/db');
+const { getPool } = require('../config/db');
 const User = require('./User');
 
 const initOrderTable = async () => {
-  const client = await pgPool.connect();
+    const client = await getPool().connect();
   try {
     await client.query(`
       CREATE TABLE IF NOT EXISTS orders (
@@ -34,7 +34,7 @@ const initOrderTable = async () => {
 
 const Order = {
   create: async (userId, items, shippingAddress, paymentMethod, totalAmount) => {
-    const client = await pgPool.connect();
+  const client = await getPool().connect();
     try {
       await client.query('BEGIN');
       const orderResult = await client.query(
@@ -59,14 +59,14 @@ const Order = {
   },
 
   findById: async (id) => {
-    const orderResult = await pgPool.query('SELECT * FROM orders WHERE id = $1', [id]);
+    const orderResult = await getPool().query('SELECT * FROM orders WHERE id = $1', [id]);
     if (orderResult.rows.length === 0) return null;
-    const itemsResult = await pgPool.query('SELECT * FROM order_items WHERE order_id = $1', [id]);
+    const itemsResult = await getPool().query('SELECT * FROM order_items WHERE order_id = $1', [id]);
     return { ...orderResult.rows[0], items: itemsResult.rows };
   },
 
   findByUserId: async (userId) => {
-    const result = await pgPool.query(
+    const result = await getPool().query(
       `SELECT o.*, json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'name', oi.name, 'image', oi.image, 'price', oi.price, 'quantity', oi.quantity)) as items FROM orders o LEFT JOIN order_items oi ON o.id = oi.order_id WHERE o.user_id = $1 GROUP BY o.id ORDER BY o.created_at DESC`,
       [userId]
     );
@@ -74,7 +74,7 @@ const Order = {
   },
 
   findAll: async () => {
-    const result = await pgPool.query(
+    const result = await getPool().query(
       `SELECT o.*, json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'name', oi.name, 'image', oi.image, 'price', oi.price, 'quantity', oi.quantity)) as items FROM orders o LEFT JOIN order_items oi ON o.id = oi.order_id GROUP BY o.id ORDER BY o.created_at DESC`
     );
     const orders = result.rows;
@@ -93,7 +93,7 @@ const Order = {
   },
 
   updateStatus: async (id, status) => {
-    const result = await pgPool.query(
+    const result = await getPool().query(
       'UPDATE orders SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
       [status, id]
     );
