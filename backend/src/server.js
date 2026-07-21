@@ -6,7 +6,6 @@ const path = require('path');
 require('dotenv').config();
 
 const { connectMongo, connectPostgres } = require('./config/db');
-const { initOrderTable } = require('./models/Order');
 const errorHandler = require('./middleware/errorHandler');
 
 const authRoutes = require('./routes/authRoutes');
@@ -42,7 +41,6 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   await connectMongo();
   await connectPostgres();
-  await initOrderTable();
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

@@ -1,29 +1,32 @@
-console.log('Function loaded');
+const prisma = require('../src/config/prisma');
+const { connectMongo } = require('../src/config/db');
+
+let isConnected = false;
+let connectionError = null;
+
+async function init() {
+  if (isConnected || connectionError) return;
+  try {
+    await prisma.$connect();
+    await connectMongo();
+    isConnected = true;
+  } catch (error) {
+    console.error('Init failed:', error.message);
+    connectionError = error.message;
+  }
+}
 
 module.exports = async (req, res) => {
-  console.log('Request:', req.method, req.url);
   try {
-    console.log('Loading server...');
-    const server = require('../src/server');
-    console.log('Server loaded, app:', typeof server.app);
-
-    const { connectMongo, connectPostgres } = require('../src/config/db');
-    const { initOrderTable } = require('../src/models/Order');
-
-    console.log('Connecting MongoDB...');
-    await connectMongo();
-    console.log('Connecting Postgres...');
-    await connectPostgres();
-    console.log('Init order table...');
-    await initOrderTable();
-    console.log('DB ready');
-
-    return server.app(req, res);
+    await init();
   } catch (error) {
-    console.error('HANDLER ERROR:', error.message, error.stack);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return res.status(500).json({ success: false, message: 'Server initialization failed', error: error.message });
   }
+
+  if (connectionError) {
+    return res.status(500).json({ success: false, message: 'Database connection failed', error: connectionError });
+  }
+
+  const { app } = require('../src/server');
+  return app(req, res);
 };

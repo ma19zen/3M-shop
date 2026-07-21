@@ -1,16 +1,5 @@
 const mongoose = require('mongoose');
-const { Pool } = require('pg');
-
-let pgPool;
-
-const getPool = () => {
-  if (!pgPool) {
-    pgPool = new Pool({
-      connectionString: process.env.POSTGRES_URI,
-    });
-  }
-  return pgPool;
-};
+const prisma = require('./prisma');
 
 const connectMongo = async () => {
   if (mongoose.connection.readyState === 1) return;
@@ -25,13 +14,12 @@ const connectMongo = async () => {
 
 const connectPostgres = async () => {
   try {
-    const client = await getPool().connect();
-    console.log('PostgreSQL Connected');
-    client.release();
+    await prisma.$connect();
+    console.log('PostgreSQL (Prisma) Connected');
   } catch (error) {
     console.error(`PostgreSQL Error: ${error.message}`);
     throw error;
   }
 };
 
-module.exports = { connectMongo, connectPostgres, getPool };
+module.exports = { connectMongo, connectPostgres, prisma };
