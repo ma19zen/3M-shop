@@ -2,8 +2,6 @@ const prisma = require('../config/prisma');
 const bcrypt = require('bcryptjs');
 const generateToken = require('../utils/generateToken');
 const AppError = require('../utils/AppError');
-const Review = require('../models/Review');
-const ActivityLog = require('../models/ActivityLog');
 
 exports.register = async (req, res, next) => {
   try {
@@ -18,7 +16,7 @@ exports.register = async (req, res, next) => {
     });
     await prisma.cart.create({ data: { userId: user.id } });
     const token = generateToken(user.id, user.role);
-    await ActivityLog.create({ userId: user.id, action: 'register', ip: req.ip });
+    await prisma.activityLog.create({ data: { userId: user.id, action: 'register', ip: req.ip } });
     res.status(201).json({
       success: true,
       data: {
@@ -45,7 +43,7 @@ exports.login = async (req, res, next) => {
       return next(new AppError('Invalid email or password', 401));
     }
     const token = generateToken(user.id, user.role);
-    await ActivityLog.create({ userId: user.id, action: 'login', ip: req.ip });
+    await prisma.activityLog.create({ data: { userId: user.id, action: 'login', ip: req.ip } });
     res.json({
       success: true,
       data: {

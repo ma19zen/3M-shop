@@ -1,6 +1,7 @@
 const prisma = require('../config/prisma');
-const Review = require('../models/Review');
 const AppError = require('../utils/AppError');
+
+const REVIEW_SERVICE_URL = process.env.REVIEW_SERVICE_URL || 'http://localhost:5001';
 
 exports.getProducts = async (req, res, next) => {
   try {
@@ -77,7 +78,17 @@ exports.getProductById = async (req, res, next) => {
     });
     if (!product) return next(new AppError('Product not found', 404));
 
-    const reviews = await Review.find({ productId: product.id }).sort({ createdAt: -1 });
+    let reviews = [];
+    try {
+      const reviewRes = await fetch(`${REVIEW_SERVICE_URL}/api/reviews/product/${product.id}`);
+      if (reviewRes.ok) {
+        const reviewData = await reviewRes.json();
+        reviews = reviewData.data || [];
+      }
+    } catch {
+      reviews = [];
+    }
+
     res.json({ success: true, data: { ...product, reviews } });
   } catch (error) {
     next(error);
@@ -181,24 +192,33 @@ exports.addReview = async (req, res, next) => {
     const product = await prisma.product.findUnique({ where: { id: req.params.id } });
     if (!product) return next(new AppError('Product not found', 404));
 
-    const review = await Review.create({
-      productId: product.id,
-      userId: req.user.id,
-      name: req.user.name,
-      rating: Number(rating),
-      comment,
+    const reviewRes = await fetch(`${REVIEW_SERVICE_URL}/api/reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productId: product.id,
+        userId: req.user.id,
+        name: req.user.name,
+        rating: Number(rating),
+        comment,
+      }),
     });
 
-    const allReviews = await Review.find({ productId: product.id });
-    const avgRating = allReviews.reduce((acc, r) => acc + r.rating, 0) / allReviews.length;
-    await prisma.product.update({
-      where: { id: product.id },
-      data: { rating: avgRating, numReviews: allReviews.length },
-    });
+    const reviewData = await reviewRes.json();
 
-    res.status(201).json({ success: true, data: review });
+    if (!reviewRes.ok) {
+      return res.status(reviewRes.status).json({ success: false, message: reviewData.message });
+    }
+
+    if (reviewData.stats) {
+      await prisma.product.update({
+        where: { id: product.id },
+        data: { rating: reviewData.stats.averageRating, numReviews: reviewData.stats.totalReviews },
+      });
+    }
+
+    res.status(201).json({ success: true, data: reviewData.data });
   } catch (error) {
-    if (error.code === 11000) return next(new AppError('You already reviewed this product', 400));
     next(error);
   }
 };

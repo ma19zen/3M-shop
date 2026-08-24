@@ -1,0 +1,99 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm test
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          JWT_SECRET: test-secret
+          NODE_ENV: test
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  test-review-service:
+    name: Test Review Service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: review-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: review-service/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+
+  deploy:
+    name: Deploy to Production
+    needs: [test-backend, test-frontend, test-review-service]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy Backend to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: prj_qaRyeH2x8ZU1e9IzEDyZq2hoPI6a
+          working-directory: backend
+          vercel-args: '--prod'
+      - name: Deploy Frontend to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: prj_avCrH6IpuHF2VMAl2pP4YjnNOTiK
+          working-directory: frontend
+          vercel-args: '--prod'
+          vercel-env-vars: 'VITE_API_URL=${{ secrets.PRODUCTION_API_URL }}'
+      - name: Deploy Review Service to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: prj_PiIAP4s8YkOTAT84fZa5jMZGLX6p
+          working-directory: review-service
+          vercel-args: '--prod'

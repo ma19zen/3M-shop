@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: gcp-simulation
+  labels:
+    app: backend
+    cloud: gcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        cloud: gcp
+    spec:
+      containers:
+        - name: backend
+          image: node:20-alpine
+          ports:
+            - containerPort: 5000
+          command: ["node", "src/server.js"]
+          env:
+            - name: PORT
+              value: "5000"
+            - name: NODE_ENV
+              value: "production"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: gcp-secrets
+                  key: database-url
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: gcp-secrets
+                  key: jwt-secret
+            - name: FRONTEND_URL
+              value: "http://localhost:31080"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gcp-secrets
+  namespace: gcp-simulation
+type: Opaque
+stringData:
+  database-url: "postgresql://postgres:password@localhost:5432/ecommerce"
+  jwt-secret: "gcp-simulation-jwt-secret"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: gcp-simulation
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 5000
+      targetPort: 5000
+      nodePort: 31500
+  type: NodePort

@@ -9,3 +9,5 @@ uploads/*.jpeg
 uploads/*.gif
 
 /src/generated/prisma
+
+.vercel

@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: aws-simulation
+  labels:
+    app: backend
+    cloud: aws
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        cloud: aws
+    spec:
+      containers:
+        - name: backend
+          image: node:20-alpine
+          ports:
+            - containerPort: 5000
+          command: ["node", "src/server.js"]
+          env:
+            - name: PORT
+              value: "5000"
+            - name: NODE_ENV
+              value: "production"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets
+                  key: database-url
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets
+                  key: jwt-secret
+            - name: FRONTEND_URL
+              value: "http://localhost:30080"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-secrets
+  namespace: aws-simulation
+type: Opaque
+stringData:
+  database-url: "postgresql://postgres:password@localhost:5432/ecommerce"
+  jwt-secret: "aws-simulation-jwt-secret"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: aws-simulation
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 5000
+      targetPort: 5000
+      nodePort: 30500
+  type: NodePort

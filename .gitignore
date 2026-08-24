@@ -1,5 +1,7 @@
 node_modules/
 .env
+.env.*
+!.env.example
 dist/
 build/
 coverage/
@@ -7,3 +9,5 @@ uploads/*
 !uploads/.gitkeep
 .DS_Store
 *.log
+.vercel
+logs/
