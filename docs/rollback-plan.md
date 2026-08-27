@@ -1,9 +1,13 @@
 # Incident Response & Rollback Plan
 
+## Production Log Location
+
+Logs are read in production through the **Vercel Dashboard** at https://vercel.com/mazen19/backend/functions — this shows real-time function logs with timestamps and severity levels for all backend and review service invocations.
+
 ## Detection
 
 1. **UptimeRobot** alerts via email/Slack when `/api/health` returns non-200 status or is unreachable for 2+ consecutive checks
-2. **Vercel Dashboard** shows build failures, function errors, or elevated error rates in real-time logs
+2. **Vercel Dashboard** function logs (https://vercel.com/mazen19/backend/functions) show build failures, function errors, or elevated error rates in real-time
 3. **User reports** of application malfunction
 
 ## Rollback Steps
