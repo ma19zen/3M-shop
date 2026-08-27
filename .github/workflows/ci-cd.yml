@@ -72,28 +72,21 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install latest Vercel CLI
+        run: npm i -g vercel@latest
+
       - name: Deploy Backend to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: team_IufuMLJE8MApLpj8theyFQJs
-          vercel-project-id: prj_qaRyeH2x8ZU1e9IzEDyZq2hoPI6a
-          working-directory: backend
-          vercel-args: '--prod'
+        working-directory: backend
+        run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes
+
       - name: Deploy Frontend to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: team_IufuMLJE8MApLpj8theyFQJs
-          vercel-project-id: prj_avCrH6IpuHF2VMAl2pP4YjnNOTiK
-          working-directory: frontend
-          vercel-args: '--prod'
-          vercel-env-vars: 'VITE_API_URL=${{ secrets.PRODUCTION_API_URL }}'
+        working-directory: frontend
+        run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes
+
       - name: Deploy Review Service to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: team_IufuMLJE8MApLpj8theyFQJs
-          vercel-project-id: prj_PiIAP4s8YkOTAT84fZa5jMZGLX6p
-          working-directory: review-service
-          vercel-args: '--prod'
+        working-directory: review-service
+        run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes
