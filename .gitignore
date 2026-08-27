@@ -9,5 +9,6 @@ uploads/*
 !uploads/.gitkeep
 .DS_Store
 *.log
-.vercel
+.vercel/*
+!.vercel/project.json
 logs/

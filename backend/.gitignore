@@ -10,4 +10,5 @@ uploads/*.gif
 
 /src/generated/prisma
 
-.vercel
+.vercel/*
+!.vercel/project.json
